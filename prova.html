@@ -1,0 +1,11 @@
+<html>
+    <body id="body">
+        <script>
+            function metti_immagine(){
+                document.getElementById("body").innerHTML += '<img src="' + document.getElementById("id").value + '">';
+            }
+        </script>
+        <input type="text" id="id">
+        <button onclick="metti_immagine()" value="invio">invio</button>
+    </body>
+</html>
