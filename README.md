@@ -1,5 +1,5 @@
 # PW
-Project Work di Danielli, Di Benedetto, Epifani e Lizzani
+Project Work di Danielli, Dibenedetto, Epifani e Lizzani
 
 Per chi volesse testare l'applicazione, per il momento non offre molta flessibilità, il file main.py è lo script principale, usa dei dati contenuti in aggregator.py per sapere come visitare varie pagine, è per ora necessario modificare aggregator.py per testare pagine diverse da test.html.
 
