@@ -24,13 +24,16 @@ def visitPage(page, instructions):
             return By.ID
         if f == 'tag':
             return By.TAG_NAME
-        
+        if f == 'path':
+            return By.XPATH
+        if f == 'name':
+            return By.NAME
     def getElement(i):
         return driver.find_element(by=getFilter(i[2]), value=i[1])
 
     driver = webdriver.Chrome()
     driver.get(page)
-
+    
     #ciclo che esegue le varie istruzioni necessarie a navigare la pagina
     for i in instructions:
         if i[0] == 'type':
