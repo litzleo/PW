@@ -15,16 +15,17 @@ def genera_nome_cognome():
     return nome, cognome
 
 def getPages():
-    return ["https://litzleo.github.io/PW/siti%20di%20test/sito_palestra"]
+    return ["palestra"]
 
 def getKindOfUsers(page):
-    if page == "https://litzleo.github.io/PW/siti%20di%20test/sito_palestra":
+    if page == "palestra":
         return ['base', 'curioso','determinato']
     
 def getInstructions(page, user):
-    if page == "https://litzleo.github.io/PW/siti%20di%20test/sito_palestra":
+    if page == "palestra":
         if user == 'base':
             return [ 
+                    ['visit', 'https://litzleo.github.io/PW/siti%20di%20test/sito_palestra'], 
                     ['wait', 4000, 7000],
                     ['click', '/html/body/ul/li[3]/a', 'path'],
                     ['wait', 7000, 10000],                    
@@ -36,6 +37,7 @@ def getInstructions(page, user):
         if user == 'curioso':
             nome, cognome = genera_nome_cognome()
             return [ 
+                    ['visit', 'https://litzleo.github.io/PW/siti%20di%20test/sito_palestra'], 
                     ['wait', 4000, 7000],
                     ['click', '/html/body/ul/li[1]/a', 'path'],
                     ['wait', 8000, 10000],                    
