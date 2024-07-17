@@ -157,7 +157,7 @@ for q in quantities:
     userType, amount = q.split(':')
     for i in range(int(amount)):
         time.sleep(0.1)
-        x = threading.Thread(target=visitPage, args=(page, aggregator.getInstructions(userType),))
+        x = threading.Thread(target=visitPage, args=(page, aggregator.getInstructions(page, userType),))
         x.start()
 
 
