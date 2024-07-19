@@ -15,7 +15,6 @@ import threading
 import aggregator
 import random
 random.seed()
-
 #funzione che visita la pagina selezionata, viene utilizzata da vari thread per poter visitare la stessa pagina più volte contemporaneamente
 def visitPage(instructions):
 
@@ -32,25 +31,24 @@ def visitPage(instructions):
         return driver.find_element(by=getFilter(i[2]), value=i[1])
 
     driver = webdriver.Chrome()
+    driver.implicitly_wait(1000)
     
     #ciclo che esegue le varie istruzioni necessarie a navigare la pagina
-    page_visited = False
     
     for i in instructions:
-        if page_visited:
-            if i[0] == 'type':
-                el = getElement(i)
-                el.send_keys(i[3])
+        if i[0] == 'type':
+            el = getElement(i)
+            el.send_keys(i[3])
 
-            if i[0] == 'click':
-                el = getElement(i)
-                el.click()
+        if i[0] == 'click':
+            el = getElement(i)
+            el.click()
 
-            if i[0] == 'wait':
-                waitTime = int(i[1] + random.random()*(i[2] - i[1]))
-                time.sleep(waitTime/1000)
-        else:
-            if i[0] == 'visit':
+        if i[0] == 'wait':
+            waitTime = int(i[1] + random.random()*(i[2] - i[1]))
+            time.sleep(waitTime/1000)
+
+        if i[0] == 'visit':
                 driver.get(i[1])
 
     driver.quit()
