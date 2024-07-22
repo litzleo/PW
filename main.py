@@ -31,7 +31,7 @@ def visitPage(instructions):
         return driver.find_element(by=getFilter(i[2]), value=i[1])
 
     driver = webdriver.Chrome()
-    driver.implicitly_wait(1000)
+    driver.implicitly_wait(5)
     
     #ciclo che esegue le varie istruzioni necessarie a navigare la pagina
     
@@ -45,7 +45,11 @@ def visitPage(instructions):
             el.click()
 
         if i[0] == 'wait':
-            waitTime = int(i[1] + random.random()*(i[2] - i[1]))
+            waitTime = 0
+            if len(i) == 3:
+                waitTime = int(i[1] + random.random()*(i[2] - i[1]))
+            else:
+                waitTime = i[1](random.random())
             time.sleep(waitTime/1000)
 
         if i[0] == 'visit':
@@ -105,7 +109,8 @@ def isValidUserQuantityList(comm, u):
             
 
 #Si richiede all'utente di selezionare una pagina tra quelle disponibili
-
+import os
+os.chdir('C:/Users/quest/Desktop')
 pages = aggregator.getPages()
 
 error_message = ' (input invalido, riprova)'
