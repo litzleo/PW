@@ -2,7 +2,7 @@ try:
     import tkinter as tk
 except:
     import pip
-    pip.main(['install', 'tkinter'])
+    pip.main(['install', 'python3-tk'])
     import tkinter as tk
 
 from tkinter import messagebox
