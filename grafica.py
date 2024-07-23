@@ -1,96 +1,20 @@
-import tkinter as tk
+try:
+    import tkinter as tk
+except:
+    import pip
+    pip.main(['install', 'tkinter'])
+    import tkinter as tk
+
 from tkinter import messagebox
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-import time
-import threading
 import aggregator
-import random
+from main import beginBrowsing
+from re import search
 
-random.seed()
-
-def visitPage(page, instructions):
-    def getFilter(f):
-        if f == 'id':
-            return By.ID
-        if f == 'tag':
-            return By.TAG_NAME
-        if f == 'path':
-            return By.XPATH
-        if f == 'name':
-            return By.NAME
-    
-    def getElement(i):
-        return driver.find_element(by=getFilter(i[2]), value=i[1])
-
-    driver = webdriver.Chrome()
-    driver.get(page)
-    
-    for i in instructions:
-        if i[0] == 'type':
-            el = getElement(i)
-            el.send_keys(i[3])
-
-        if i[0] == 'click':
-            el = getElement(i)
-            el.click()
-
-        if i[0] == 'wait':
-            waitTime = int(i[1] + random.random() * (i[2] - i[1]))
-            time.sleep(waitTime / 1000)
-    
-    driver.quit()
-
-def isValidUserQuantityList(comm, users):
-    s = ''
-    if not comm:
-        return False
-    
-    user_list = list(users)
-    for i in range(len(user_list)):
-        user_list[i] = user_list[i].lower()
-
-    state = 'user'
-    num = False
-    user = ''
-    quantity = 0
-    
-    for c in comm.lower():
-        ascii = ord(c)
-        if state == 'user':
-            if ord('a') <= ascii <= ord('z'):
-                user += c
-            elif c == ':':
-                if user not in user_list:
-                    return False
-                user_list.remove(user)
-                s += user + ':'
-                user = ''
-                state = 'quantity'
-                num = False
-            elif c == ' ':
-                pass
-            else:
-                return False
-        elif state == 'quantity':
-            if ord('0') <= ascii <= ord('9'):
-                quantity *= 10
-                quantity += int(c)
-                s += c
-                num = True
-            elif c == ' ':
-                if num:
-                    state = 'user'
-                    s += ' '
-            elif c != '\0':
-                return False
-    
-    return s
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Web Interaction")
+        self.title("")
         self.geometry("600x400")
         self.configure(bg="#f0f0f0")
         self.pages = aggregator.getPages()
@@ -147,24 +71,19 @@ class App(tk.Tk):
                 entry = tk.Entry(frame, font=label_font, bg="#ffffff", fg="#333333")
                 entry.pack(side="left", padx=5, expand=True, fill="x")
                 self.user_entries[user] = entry
-
-            start_button = tk.Button(self.user_frame, text="Avvia", command=self.start_threads, bg="#28a745", fg="#ffffff", font=label_font)
+            
+            pass_page_to_threads = lambda : self.start_threads(page)
+            start_button = tk.Button(self.user_frame, text="Avvia", command=pass_page_to_threads, bg="#28a745", fg="#ffffff", font=label_font)
             start_button.pack(pady=10)
             start_button.config(anchor="w")
         else:
             messagebox.showwarning("Attenzione", "Seleziona un sito valido")
 
-    def start_threads(self):
-        comm = ' '.join(f"{user}:{entry.get()}" for user, entry in self.user_entries.items() if entry.get().isdigit())
-        comm = isValidUserQuantityList(comm, self.users)
+    def start_threads(self, page):
+        comm = ' '.join(f"{user}:{entry.get().replace(' ', '')}" for user, entry in self.user_entries.items() if search('^ *[0-9]+ *$', entry.get()))
 
         if comm:
-            quantities = comm.split()
-            for q in quantities:
-                userType, amount = q.split(':')
-                for i in range(int(amount)):
-                    time.sleep(0.1)
-                    threading.Thread(target=visitPage, args=(self.page_var.get(), aggregator.getInstructions(self.page_var.get(), userType))).start()
+            beginBrowsing(comm, page)
         else:
             messagebox.showerror("Input invalido", "Inserire la quantità richiesta del tipo utente in numeri")
 

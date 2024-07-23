@@ -33,12 +33,14 @@ except:
 
 import random
 
-from os import listdir
+from os import listdir, chdir
 from os.path import isfile, join
-import os
+separator = '/' if '/' in __file__ else '\\'
+path = separator.join(__file__.split(separator)[:-1])
+chdir(path)
 
 def getFiles():
-    return [f for f in listdir('./analytics') if isfile(join('./analytics', f))]
+    return [f for f in listdir('.'+separator+'analytics') if isfile(join('.'+separator+'analytics', f))]
 
 
 def genera_nome_cognome():
@@ -57,6 +59,18 @@ def getKindOfUsers(page):
     return ['base']
     
 def getInstructions(page, user):
+
+    def regress(values):
+        num_values = len(values)
+        X = np.array([x/num_values for x in range(num_values)]).reshape(-1, 1)
+        y = np.array(values)
+
+        degree = 2
+        model = make_pipeline(PolynomialFeatures(degree), LinearRegression())
+
+        model.fit(X, y)
+        return lambda v :  model.predict(np.array([[v]]))[0]
+
     #url,action,x,y,element,time,session_id
     df = pd.read_csv('./analytics/'+page+'.csv')
 
@@ -97,14 +111,8 @@ def getInstructions(page, user):
     for clicks_in_sess in clicks.groupby('session_id'):
         num_clicks.append(len(clicks_in_sess[1].index))
     num_clicks.sort()
-    X = np.array([x/len(num_clicks) for x in range(len(num_clicks))]).reshape(-1, 1)
-    y = np.array(num_clicks)
-
-    degree = 2
-    model = make_pipeline(PolynomialFeatures(degree), LinearRegression())
-
-    model.fit(X, y)
-    clicks_to_do = int(model.predict(np.array([[random.random()]]))[0])
+    
+    clicks_to_do = int(regress(num_clicks)(random.random()))
 
     for i in range(clicks_to_do):
         #prendo gli eventi dei click fatti al precedente url
@@ -126,27 +134,18 @@ def getInstructions(page, user):
                 waiting_times.append(time - prev_clicks.iloc[-1]['time'])
             
             #colleziono tutte le possibilità di click e dove mi portano
-            sessions = df.loc[df['session_id'] == sess]
-            next_urls = sessions.loc[sessions['time'] > time]
+            session = df.loc[df['session_id'] == sess]
+            next_urls = session.loc[session['time'] > time]
             next_url = None if next_urls.empty else next_urls.sort_values('time').iloc[0]['url']
             next_moves.append({'url':next_url, 'element':row['element']})
 
         waiting_times.sort()
 
-        num_dati = len(waiting_times)
-
-        if num_dati > 3:
+        if len(waiting_times) > 3:
             #alleno un algoritmo di regressione per capire la distribuzione statistica dei tempi relativi ai click
-            X = np.array([x/num_dati for x in range(num_dati)]).reshape(-1, 1)
-            y = np.array(waiting_times)
-
-            degree = 2
-            model = make_pipeline(PolynomialFeatures(degree), LinearRegression())
-
-            model.fit(X, y)
-
+            waiting_time = regress(waiting_times)
             #aggiungo un'istruzione per aspettare con una lambda che usa la distribuzione trovata e un click
-            instructions.append(['wait', lambda x : max(20, model.predict(np.array([[x]]))[0] ) ])
+            instructions.append(['wait', lambda x : max(20, waiting_time(x)) ])
         else:
             instructions.append(['wait', min(waiting_times), max(waiting_times)])
 
@@ -154,7 +153,25 @@ def getInstructions(page, user):
             next_move = random.choice(next_moves)
             instructions.append(['click', next_move['element'], 'path'])
             last_url = next_move['url']
-    
+
+    #calcolo quanto aspettare prima di chiudere la sessione
+    waiting_times = []
+    for s in sessions:
+        exit_time = s.iloc[-1]['time']
+        last_click_time = 0
+        clicks = s.loc[s['action'] == 'click']
+        if not clicks.empty:
+            last_click_time = clicks.iloc[-1]['time']
+        waiting_times.append(exit_time-last_click_time)
+
+    if len(waiting_times) > 3:
+        #alleno un algoritmo di regressione per capire la distribuzione statistica dei tempi relativi ai click
+        waiting_time = regress(waiting_times)
+        #aggiungo un'istruzione per aspettare con una lambda che usa la distribuzione trovata e un click
+        instructions.append(['wait', lambda x : max(20, waiting_time(x)) ])
+    else:
+        instructions.append(['wait', min(waiting_times), max(waiting_times)])
+
     return instructions
         
 

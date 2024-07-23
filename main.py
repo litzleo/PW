@@ -9,12 +9,12 @@ except:
     from selenium import webdriver
     from selenium.webdriver.common.by import By
 
-
 import time
 import threading
 import aggregator
 import random
 random.seed()
+
 #funzione che visita la pagina selezionata, viene utilizzata da vari thread per poter visitare la stessa pagina più volte contemporaneamente
 def visitPage(instructions):
 
@@ -107,60 +107,65 @@ def isValidUserQuantityList(comm, u):
                 return False
     return s
             
+def beginBrowsing(comm, page):
+    quantities = comm.split()
+
+    #vengono generati dei thread ognuno dei quali imita il comportamento di un utente
+
+    for q in quantities:
+        userType, amount = q.split(':')
+        for i in range(int(amount)):
+            time.sleep(0.1)
+            x = threading.Thread(target=visitPage, args=(aggregator.getInstructions(page, userType),))
+            x.start()
 
 #Si richiede all'utente di selezionare una pagina tra quelle disponibili
-import os
-os.chdir('C:/Users/quest/Desktop')
+
 pages = aggregator.getPages()
 
-error_message = ' (input invalido, riprova)'
+if __name__ == "__main__":
 
-print('Siti disponibili:')
-for ind in range(len(pages)):
-    print(str(ind+1)+' - '+pages[ind])
+    error_message = ' (input invalido, riprova)'
 
-mx = '\nScegli un sito (specificandone solo il numero)'
-pageInd = 0
-firstLoop = True
-while(not isValidPage(pageInd, len(pages))):
-    pageInd = input(mx+': ')
-    if firstLoop:
-        mx += error_message
-    firstLoop = False
+    print('Siti disponibili:')
+    for ind in range(len(pages)):
+        print(str(ind+1)+' - '+pages[ind])
 
-page = pages[int(pageInd)-1]
+    mx = '\nScegli un sito (specificandone solo il numero)'
+    pageInd = 0
+    firstLoop = True
+    while(not isValidPage(pageInd, len(pages))):
+        pageInd = input(mx+': ')
+        if firstLoop:
+            mx += error_message
+        firstLoop = False
 
-#Permette di scegliere quante istanze di ogni tipo di utente virtuale processare
+    page = pages[int(pageInd)-1]
 
-users = aggregator.getKindOfUsers(page)
+    #Permette di scegliere quante istanze di ogni tipo di utente virtuale processare
 
-print("\nTipi di utenti: ")
+    users = aggregator.getKindOfUsers(page)
 
-for u in users:
-    print(' - '+u)
+    print("\nTipi di utenti: ")
 
-comm = ''
-mx = '\nSeleziona tipi e quantità (usa il formato "tipoutente:quantità tipoutente:quantità")'
-firstLoop = True
-invalidInput = True
-while(invalidInput):
-    comm = input(mx+': ')
-    comm = isValidUserQuantityList(comm.rstrip(), users)
-    if(comm != False):
-        invalidInput = False
-    if firstLoop:
-        mx += error_message
-    firstLoop = False
-    
-quantities = comm.split()
+    for u in users:
+        print(' - '+u)
 
-#vengono generati dei thread ognuno dei quali imita il comportamento di un utente
+    comm = ''
+    mx = '\nSeleziona tipi e quantità (usa il formato "tipoutente:quantità tipoutente:quantità")'
+    firstLoop = True
+    invalidInput = True
+    while(invalidInput):
+        comm = input(mx+': ')
+        comm = isValidUserQuantityList(comm.rstrip(), users)
+        if(comm != False):
+            invalidInput = False
+        if firstLoop:
+            mx += error_message
+        firstLoop = False
 
-for q in quantities:
-    userType, amount = q.split(':')
-    for i in range(int(amount)):
-        time.sleep(0.1)
-        x = threading.Thread(target=visitPage, args=(aggregator.getInstructions(page, userType),))
-        x.start()
+    beginBrowsing(comm, page)    
+
+
 
 
