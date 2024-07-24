@@ -23,12 +23,15 @@ try:
     from sklearn.preprocessing import PolynomialFeatures
     from sklearn.linear_model import LinearRegression
     from sklearn.pipeline import make_pipeline
+    from sklearn.cluster import KMeans
+    from sklearn.preprocessing import normalize
 except:
     import pip
     pip.main(['install', 'scikit-learn'])
     from sklearn.preprocessing import PolynomialFeatures
     from sklearn.linear_model import LinearRegression
     from sklearn.pipeline import make_pipeline
+    from sklearn.cluster import KMeans
 
 
 import random
@@ -55,8 +58,110 @@ def getPages():
         pages.append(a[:-4])
     return pages
 
+kind_of_users = {}
 def getKindOfUsers(page):
-    return ['base']
+    global kind_of_users
+    kind_of_users[page] = {}
+    analytics = pd.read_csv('./analytics/'+page+'.csv')
+    sessions = analytics.groupby('session_id')
+    features = {}
+    ml_input = []
+    min_clicks = None
+    max_clicks = None
+    min_time = None
+    max_time = None
+    for sess, events in sessions:
+        clicks = events.loc[events['action'] == 'click']
+        clicks = clicks.sort_values('time')
+        num_clicks = len(clicks.index)
+        avg_wait = clicks.iloc[-1]['time'] / len(clicks.index)
+        features[str(sess)] = [num_clicks, avg_wait]
+        ml_input.append(features[str(sess)])
+        if min_clicks == None or num_clicks < min_clicks:
+            min_clicks = num_clicks
+        if max_clicks == None or num_clicks > max_clicks:
+            max_clicks = num_clicks
+        if min_time == None or avg_wait < min_time:
+            min_time = avg_wait
+        if max_time == None or avg_wait > max_time:
+            max_time = avg_wait
+
+    def min_max_stand(val, m, M):
+        if m==M:
+            return 0.5
+        return (val-m)/(M-m)
+    def standardize(input, max_c, max_w, min_c, min_w):
+        output = []
+        for i in input:
+            output.append([min_max_stand(i[0], min_c, max_c),   min_max_stand(i[1], min_w, max_w)])
+        return output
+    
+    ind = 0
+    for data in standardize(ml_input, max_clicks, max_time, min_clicks, min_time):
+        ml_input[ind][0] = data[0]
+        ml_input[ind][1] = data[1]
+        ind += 1
+
+    num_kinds = 3
+    labels = ['']
+    corners = []
+    corners.append([0, 0])
+    corners.append([1, 0])
+    corners.append([1, 1])
+    kinds = set()
+    while '' in labels:
+        labels = []
+        for i in range(num_kinds):
+            labels.append('')
+        if num_kinds == 1:
+            kind_of_users['normale'] = analytics
+            return ['normale']
+        try:
+            kmeans = KMeans(init="k-means++", n_clusters=num_kinds, n_init=4)
+            kmeans.fit(np.array(ml_input))
+        except ValueError:
+            num_kinds -= 1
+            continue
+        corners_class = []
+        for i in range(3):
+            corners_class.append(kmeans.predict(np.array([corners[i]]))[0])
+        if num_kinds == 3:
+            labels[corners_class[0]] = 'esperto'
+            labels[corners_class[1]] = 'base'
+            labels[corners_class[2]] = 'curioso'
+        elif num_kinds == 2:
+            def addClasses(c1, c2):
+                if c1 == '':
+                    return c2
+                if c2 == '':
+                    return c1
+                c = [c1,c2]
+                if 'esperto' in c and 'base' in c:
+                    return 'frettoloso'
+                if 'esperto' in c and 'curioso' in c:
+                    return 'comune'
+                if 'curioso' in c and 'base' in c:
+                    return 'esploratore'
+                return ''
+            labels[corners_class[0]] = addClasses(labels[corners_class[0]], 'esperto')
+            labels[corners_class[1]] = addClasses(labels[corners_class[1]], 'base')
+            labels[corners_class[2]] = addClasses(labels[corners_class[2]], 'curioso')
+        kinds = set()
+        kinds.update(labels)
+        num_kinds -= 1
+
+    for sess in features:
+        features[sess].append(labels[ kmeans.predict(np.array([features[str(sess)]]))[0] ])
+
+    for ind, row in analytics.iterrows():
+        kind = features[str(row['session_id'])][2]
+        if kind in kinds:
+            if kind not in kind_of_users[page]:
+                kind_of_users[page][kind] = pd.DataFrame([row], columns=analytics.columns)
+            else:
+                kind_of_users[page][kind].loc[len(kind_of_users[page][kind])] = pd.DataFrame([row], columns=analytics.columns).iloc[0]
+
+    return kinds
     
 def getInstructions(page, user):
 
@@ -72,34 +177,14 @@ def getInstructions(page, user):
         return lambda v :  model.predict(np.array([[v]]))[0]
 
     #url,action,x,y,element,time,session_id
-    df = pd.read_csv('./analytics/'+page+'.csv')
-
-    '''ind = random.randrange(0, df.shape[0]-1)
-    random_user = df[df['session_id'] == df.at[ind,'session_id']]
-    instructions = []
-    last_click = 0
-    to_visit = True
-
-    for index, row in random_user.iterrows():
-        if to_visit:
-            instructions.append(['visit', row['url']])
-            to_visit = False
-        if row['action'] == 'click':
-            diff = int(row['time']) - last_click
-            last_click = int(row['time'])
-            instructions.append(['wait', diff, diff])
-            instructions.append(['click', row['element'], 'path'])
-    last_time = random_user.loc[random_user.index[-1], 'time']
-    instructions.append(['wait', last_time-last_click, last_time-last_click])
-            
-    return instructions'''
+    df = kind_of_users[page][user]
 
     instructions = []
 
     #divido i log per sessioni, poi di una sessione random prendo l'url della prima entry in ordine temporale (l'url da cui è entrato l'utente)
     sessions = []
     for s in df.groupby('session_id'):
-        s[1].sort_values('time', inplace=True)
+        s[1].sort_values('time', inplace = True)
         sessions.append(s[1])
     last_url = random.choice(sessions).iloc[0]['url']
     instructions.append(['visit', last_url])
