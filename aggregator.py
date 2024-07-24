@@ -1,12 +1,7 @@
 
 #questo modulo dovrà prendere analitiche relative alle visite a vari siti e renderle fruibili al modulo principale
 #per ora fornisce staticamente dei dati relativi ad un unico sito di test
-try:
-    from faker import Faker
-except:
-    import pip
-    pip.main(['install', 'faker'])
-    from faker import Faker
+
 try:
     import numpy as np
 except:
@@ -24,7 +19,6 @@ try:
     from sklearn.linear_model import LinearRegression
     from sklearn.pipeline import make_pipeline
     from sklearn.cluster import KMeans
-    from sklearn.preprocessing import normalize
 except:
     import pip
     pip.main(['install', 'scikit-learn'])
@@ -44,13 +38,6 @@ chdir(path)
 
 def getFiles():
     return [f for f in listdir('.'+separator+'analytics') if isfile(join('.'+separator+'analytics', f))]
-
-
-def genera_nome_cognome():
-    fake = Faker('it_IT')  # Imposta il generatore per l'Italia
-    nome = fake.first_name()
-    cognome = fake.last_name()
-    return nome, cognome
 
 def getPages():
     pages = []
@@ -114,7 +101,7 @@ def getKindOfUsers(page):
         for i in range(num_kinds):
             labels.append('')
         if num_kinds == 1:
-            kind_of_users['normale'] = analytics
+            kind_of_users[page]['normale'] = analytics
             return ['normale']
         try:
             kmeans = KMeans(init="k-means++", n_clusters=num_kinds, n_init=4)
