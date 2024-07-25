@@ -1,54 +1,9 @@
-import os
 import tkinter as tk
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.edge.service import Service as EdgeService
-from selenium.webdriver.ie.service import Service as IEService
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.firefox import GeckoDriverManager
-from webdriver_manager.microsoft import EdgeChromiumDriverManager, IEDriverManager
 from tkinter import messagebox
 import aggregator
-from main import beginBrowsing
+from main import beginBrowsing, check_installed_browsers
 from re import search
 
-def check_installed_browsers():
-    paths = {
-        "Chrome": [
-            "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-            "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-            "/usr/bin/google-chrome",
-            "/usr/bin/chromium-browser",
-            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-        ],
-        "Firefox": [
-            "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
-            "C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe",
-            "/usr/bin/firefox",
-            "/Applications/Firefox.app/Contents/MacOS/firefox"
-        ],
-        "Edge": [
-            "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-            "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
-            "/usr/bin/microsoft-edge",
-            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
-        ],
-        "IE": [
-            "C:\\Program Files\\Internet Explorer\\iexplore.exe",
-            "C:\\Program Files (x86)\\Internet Explorer\\iexplore.exe"
-        ]
-    }
-
-    installed_browsers = []
-    for browser, paths in paths.items():
-        for path in paths:
-            if os.path.exists(path):
-                installed_browsers.append(browser)
-                break
-
-    return installed_browsers
 
 class App(tk.Tk):
     def __init__(self):

@@ -1,3 +1,4 @@
+# Importo un paio di cose da selenium, se non ho installato selenium lo installo
 try:
     from selenium import webdriver
     from selenium.webdriver.common.by import By
@@ -5,7 +6,6 @@ try:
     from selenium.webdriver.firefox.service import Service as FirefoxService
     from selenium.webdriver.edge.service import Service as EdgeService
     from selenium.webdriver.ie.service import Service as IEService
-    from selenium.webdriver.safari.service import Service as SafariService
     from webdriver_manager.chrome import ChromeDriverManager
     from webdriver_manager.firefox import GeckoDriverManager
     from webdriver_manager.microsoft import EdgeChromiumDriverManager, IEDriverManager
@@ -18,29 +18,62 @@ except:
     from selenium.webdriver.firefox.service import Service as FirefoxService
     from selenium.webdriver.edge.service import Service as EdgeService
     from selenium.webdriver.ie.service import Service as IEService
-    from selenium.webdriver.safari.service import Service as SafariService
     from webdriver_manager.chrome import ChromeDriverManager
     from webdriver_manager.firefox import GeckoDriverManager
     from webdriver_manager.microsoft import EdgeChromiumDriverManager, IEDriverManager
-   
+    
 try:
     from faker import Faker
 except:
     import pip
     pip.main(['install', 'faker'])
     from faker import Faker
-
+    
+import os
 import time
 import threading
-import aggregator
 import random
+import aggregator
 random.seed()
 
-# funzione che visita la pagina selezionata, viene utilizzata da vari thread per poter visitare la stessa pagina più volte contemporaneamente
+#check dei browsers
+def check_installed_browsers():
+    paths = {
+        "Chrome": [
+            "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+            "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium-browser",
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        ],
+        "Firefox": [
+            "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+            "C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe",
+            "/usr/bin/firefox",
+            "/Applications/Firefox.app/Contents/MacOS/firefox"
+        ],
+        "Edge": [
+            "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+            "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+            "/usr/bin/microsoft-edge",
+            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
+        ],
+        "IE": [
+            "C:\\Program Files\\Internet Explorer\\iexplore.exe",
+            "C:\\Program Files (x86)\\Internet Explorer\\iexplore.exe"
+        ]
+    }
+
+    installed_browsers = []
+    for browser, paths in paths.items():
+        for path in paths:
+            if os.path.exists(path):
+                installed_browsers.append(browser)
+                break
+
+    return installed_browsers
+
 def visitPage(instructions, browser):
-
-    fake = Faker('it_IT')
-
     def getFilter(f):
         if f == 'id':
             return By.ID
@@ -53,8 +86,7 @@ def visitPage(instructions, browser):
 
     def getElement(i):
         return driver.find_element(by=getFilter(i[2]), value=i[1])
-
-    # Inizializzazione del driver in base al browser selezionato
+    
     driver = None
     if browser == 'Chrome':
         driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
@@ -64,13 +96,11 @@ def visitPage(instructions, browser):
         driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()))
     elif browser == 'IE':
         driver = webdriver.Ie(service=IEService(IEDriverManager().install()))
-    else:
-        print("Browser non supportato")
-        return
-
+    
     driver.implicitly_wait(5)
 
-    # ciclo che esegue le varie istruzioni necessarie a navigare la pagina
+    fake = Faker()
+    
     for i in instructions:
         if i[0] == 'type':
             el = getElement(i)
@@ -120,7 +150,7 @@ def isValidUserQuantityList(comm, u):
             if ascii >= ord('a') and ascii <= ord('z'):
                 user += c
             elif c == ':':
-                if user not in users:
+                if user not in users: 
                     return False
                 users.remove(user)
                 s += user + ':'
@@ -148,7 +178,6 @@ def isValidUserQuantityList(comm, u):
 def beginBrowsing(comm, page, browser):
     quantities = comm.split()
 
-    # vengono generati dei thread ognuno dei quali imita il comportamento di un utente
     for q in quantities:
         userType, amount = q.split(':')
         for i in range(int(amount)):
@@ -156,13 +185,9 @@ def beginBrowsing(comm, page, browser):
             x = threading.Thread(target=visitPage, args=(aggregator.getInstructions(page, userType), browser))
             x.start()
 
-# Si richiede all'utente di selezionare una pagina tra quelle disponibili
-
 pages = aggregator.getPages()
 
-
 if __name__ == "__main__":
-
     error_message = ' (input invalido, riprova)'
 
     print('Siti disponibili:')
@@ -172,7 +197,7 @@ if __name__ == "__main__":
     mx = '\nScegli un sito (specificandone solo il numero)'
     pageInd = 0
     firstLoop = True
-    while(not isValidPage(pageInd, len(pages))):
+    while not isValidPage(pageInd, len(pages)):
         pageInd = input(mx + ': ')
         if firstLoop:
             mx += error_message
@@ -180,12 +205,9 @@ if __name__ == "__main__":
 
     page = pages[int(pageInd) - 1]
 
-    # Permette di scegliere quante istanze di ogni tipo di utente virtuale processare
-
     users = aggregator.getKindOfUsers(page)
 
-    print("\nTipi di utenti: ")
-
+    print("\nTipi di utente: ")
     for u in users:
         print(' - ' + u)
 
@@ -193,28 +215,26 @@ if __name__ == "__main__":
     mx = '\nSeleziona tipi e quantità (usa il formato "tipoutente:quantità tipoutente:quantità")'
     firstLoop = True
     invalidInput = True
-    while(invalidInput):
+    while invalidInput:
         comm = input(mx + ': ')
         comm = isValidUserQuantityList(comm.rstrip(), users)
-        if(comm != False):
+        if comm != False:
             invalidInput = False
         if firstLoop:
             mx += error_message
         firstLoop = False
 
-    # Permette di scegliere il browser
+    # Verifica i browser installati
+    browsers = check_installed_browsers()
 
-    browsers = ["Chrome", "Firefox", "Edge", "IE"]
-
-    print("\nSeleziona un Browser: ")
-
+    print("\nBrowser disponibili: ")
     for ind in range(len(browsers)):
         print(str(ind + 1) + ' - ' + browsers[ind])
 
     mx = '\nScegli un browser (specificandone solo il numero)'
     browserInd = 0
     firstLoop = True
-    while(not isValidPage(browserInd, len(browsers))):
+    while not isValidPage(browserInd, len(browsers)):
         browserInd = input(mx + ': ')
         if firstLoop:
             mx += error_message
@@ -223,3 +243,8 @@ if __name__ == "__main__":
     browser = browsers[int(browserInd) - 1]
 
     beginBrowsing(comm, page, browser)
+
+
+
+
+
