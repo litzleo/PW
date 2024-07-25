@@ -156,6 +156,8 @@ def getInstructions(page, user):
 
     def regress(values):
         num_values = len(values)
+        if num_values == 0:
+            return lambda v : 0
         X = np.array([x/num_values for x in range(num_values)]).reshape(-1, 1)
         y = np.array(values)
 
