@@ -61,7 +61,9 @@ def getKindOfUsers(page):
         clicks = events.loc[events['action'] == 'click']
         clicks = clicks.sort_values('time')
         num_clicks = len(clicks.index)
-        avg_wait = clicks.iloc[-1]['time'] / len(clicks.index)
+        avg_wait = 0
+        if not clicks.empty:
+            avg_wait = clicks.iloc[-1]['time'] / len(clicks.index)
         features[str(sess)] = [num_clicks, avg_wait]
         ml_input.append(features[str(sess)])
         if min_clicks == None or num_clicks < min_clicks:
