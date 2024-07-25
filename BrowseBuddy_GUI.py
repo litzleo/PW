@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import aggregator
-from main import beginBrowsing, check_installed_browsers
+from BrowseBuddy import beginBrowsing, check_installed_browsers
 from re import search
 
 
