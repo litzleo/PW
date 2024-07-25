@@ -99,7 +99,7 @@ def visitPage(instructions, browser):
     
     driver.implicitly_wait(5)
 
-    fake = Faker()
+    fake = Faker('it_IT')
     
     for i in instructions:
         if i[0] == 'type':
@@ -109,8 +109,11 @@ def visitPage(instructions, browser):
         if i[0] == 'click':
             el = getElement(i)
             el.click()
-            if el.tag_name == 'input' and el.get_attribute('type') == 'text' and el.get_attribute('name') in ['name', 'Name', 'nome', 'Nome']:
-                el.send_keys(fake.name())
+            try:
+                if el.tag_name == 'input' and el.get_attribute('type') == 'text' and el.get_attribute('name') in ['name', 'Name', 'nome', 'Nome']:
+                    el.send_keys(fake.name())
+            except:
+                pass
 
         if i[0] == 'wait':
             waitTime = 0
